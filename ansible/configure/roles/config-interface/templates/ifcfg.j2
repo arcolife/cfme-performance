@@ -1,11 +1,35 @@
 # Installed by cfme-performance
 NAME="{{item.name}}"
 ONBOOT=yes
-NETBOOT=yes
-IPV6INIT=yes
-BOOTPROTO=static
+DEVICE="{{item.name}}"
+
+{% if item.nm_controlled %}
+NM_CONTROLLED="{{item.nm_controlled}}"
+{% endif %}
+
+{% if item.ipaddr %}
+IPADDR="{{item.ipaddr}}"
+NETMASK="{{item.netmask}}"
+GATEWAY="{{item.gateway}}"
+BOOTPROTO=none
+{% endif %}
+
+{% if item.ether %}
 TYPE=Ethernet
+{% endif %}
+
+{% if item.mac %}
+HWADDR="{{item.mac}}"
+{% endif %}
+
+{% if item.vlan %}
+VLAN="{{item.vlan}}"
+{% endif %}
+
+{% if item.netboot %}
+NETBOOT=yes
 DEFROUTE=yes
+IPV6INIT=yes
 IPV4_FAILURE_FATAL=no
 IPV6_AUTOCONF=yes
 IPV6_DEFROUTE=yes
@@ -14,6 +38,4 @@ PEERDNS=yes
 PEERROUTES=yes
 IPV6_PEERDNS=yes
 IPV6_PEERROUTES=yes
-DEVICE="{{item.name}}"
-IPADDR="{{item.ipaddr}}"
-NETMASK="{{item.netmask}}"
+{% endif %}

@@ -61,7 +61,23 @@ cfme_carbon_prefix: manageiq
 appliances:
   # Examples corresponding to examples in ssh-config.local.template and hosts.local.template
   CF-R0000-DB-Workload-5554-1:
-    interfaces: []
+    # interfaces: []
+    # interfaces can be empty or filled with multiple nics
+    # FIXME: add supporting code for launching vms in RHVM, when mac/ip combo is known
+    interfaces:
+      - name: eth0
+        nm_controlled: no
+      # - name: eth1
+      #   ipaddr: 10.12.70.146
+      #   mac: 00:1a:4a:16:01:53
+      #   netmask: 255.255.254.0
+      #   gateway: 10.12.71.254
+      #   ether: true
+      #   # netboot: yes
+      - name: eth0.10
+        ipaddr: 172.21.0.102
+        netmask: 255.255.0.0
+        vlan: yes
     use_separate_vmdb_disk: true
     vmdb_region: 0
     vmdb_disk: /dev/vdb
