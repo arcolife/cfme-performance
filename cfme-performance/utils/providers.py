@@ -289,71 +289,98 @@ def get_template_guids(template_dict):
     return result_list
 
 
-def add_provider(provider):
-    """Adds a provider via the REST API."""
-    logger.vdebug('Adding Provider: {}, Type: {}'
-                  .format(provider['name'],
-                          provider['type']))
+def process_ocp_provider(provider):
+    """
+    Openshift providers are handled differently in terms of authentication.
+    See https://bugzilla.redhat.com/show_bug.cgi?id=1403758#c5
+    """
+    creds = provider['connection_configurations']
+    conn_fig = [
+        {
+            'endpoint': dict(creds.ocp_endpoint),
+            'authentication': dict(creds.ocp_auth)
+        }
+    ]
+    if 'metric_endpoint' in creds:
+        conn_fig.append({'endpoint': dict(creds.metric_endpoint) })
+        if 'metric_auth' in creds:
+            conn_fig[-1]['authentication'] = dict(creds.metric_auth)
 
     data_dict = {
         "action": "create",
         "resources": [{
             "name": provider['name'],
             "type": provider['type'],
-            "credentials": [{
-                "userid": provider['credentials']['username'],
-                "password": provider['credentials']['password']
-            }]
+            "connection_configurations": conn_fig
         }]
     }
 
-    if 'ip_address' in provider:
-        data_dict['resources'][0]['hostname'] = provider['ip_address']
+    return data_dict
 
-    types = [
-        'ManageIQ::Providers::Amazon::CloudManager',
-        'ManageIQ::Providers::Google::CloudManager'
-    ]
-    if provider['type'] in types:
-        region = provider['provider_region']
-        data_dict['resources'][0]['provider_region'] = region
 
-    if 'metrics_credentials' in provider:
-        data_dict['resources'][0]['credentials'].append({
-            "userid": provider['metrics_credentials']['username'],
-            "password": provider['metrics_credentials']['password'],
-            "auth_type": "metrics"
-        })
-    elif 'password_credentials' in provider:
-        data_dict['resources'][0]['credentials'].append({
-            "userid": provider['password_credentials']['username'],
-            "password": provider['password_credentials']['password'],
-            "auth_type": "password"
-        })
-    elif 'bearer_credentials' in provider:
-        data_dict['resources'][0]['credentials'].append({
-            "userid": provider['bearer_credentials']['username'],
-            "password": provider['bearer_credentials']['password'],
-            "auth_type": "bearer"
-        })
-    elif 'amqp_credentials' in provider:
-        data_dict['resources'][0]['credentials'].append({
-            "userid": provider['amqp_credentials']['username'],
-            "password": provider['amqp_credentials']['password'],
-            "auth_type": "amqp"
-        })
-    elif 'ssh_keypair_credentials' in provider:
-        data_dict['resources'][0]['credentials'].append({
-            "userid": provider['ssh_keypair_credentials']['username'],
-            "password": provider['ssh_keypair_credentials']['password'],
-            "auth_type": "ssh_keypair"
-        })
+def add_provider(provider):
+    """Adds a provider via the REST API."""
+    logger.vdebug('Adding Provider: {}, Type: {}'
+                  .format(provider['name'],
+                          provider['type']))
 
-    #  auth_key
-    if provider['type'] == "ManageIQ::Providers::OpenshiftEnterprise::ContainerManager":
-        msg = 'Adding token for OSE'
-        # not sure about adding hawkular yet.
-        data_dict['resources'][0]['credentials']['auth_key'] = provider['credentials']['token']
+    if 'ManageIQ::Providers::Openshift' in provider['type']:
+        data_dict = process_ocp_provider(provider)
+    else:
+        data_dict = {
+            "action": "create",
+            "resources": [{
+                "name": provider['name'],
+                "type": provider['type'],
+                "credentials": [{
+                    "userid": provider['credentials']['username'],
+                    "password": provider['credentials']['password']
+                }]
+            }]
+        }
+
+        if 'ip_address' in provider:
+            data_dict['resources'][0]['hostname'] = provider['ip_address']
+
+        types = [
+            'ManageIQ::Providers::Amazon::CloudManager',
+            'ManageIQ::Providers::Google::CloudManager'
+        ]
+        if provider['type'] in types:
+            region = provider['provider_region']
+            data_dict['resources'][0]['provider_region'] = region
+
+        if 'metrics_credentials' in provider:
+            data_dict['resources'][0]['credentials'].append({
+                "userid": provider['metrics_credentials']['username'],
+                "password": provider['metrics_credentials']['password'],
+                "auth_type": "metrics"
+            })
+        elif 'password_credentials' in provider:
+            data_dict['resources'][0]['credentials'].append({
+                "userid": provider['password_credentials']['username'],
+                "password": provider['password_credentials']['password'],
+                "auth_type": "password"
+            })
+        elif 'bearer_credentials' in provider:
+            data_dict['resources'][0]['credentials'].append({
+                "userid": provider['bearer_credentials']['username'],
+                "password": provider['bearer_credentials']['password'],
+                "auth_type": "bearer"
+            })
+        elif 'amqp_credentials' in provider:
+            data_dict['resources'][0]['credentials'].append({
+                "userid": provider['amqp_credentials']['username'],
+                "password": provider['amqp_credentials']['password'],
+                "auth_type": "amqp"
+            })
+        elif 'ssh_keypair_credentials' in provider:
+            data_dict['resources'][0]['credentials'].append({
+                "userid": provider['ssh_keypair_credentials']['username'],
+                "password": provider['ssh_keypair_credentials']['password'],
+                "auth_type": "ssh_keypair"
+            })
+
 
     json_data = json.dumps(data_dict)
     appliance = cfme_appliance['ip_address']

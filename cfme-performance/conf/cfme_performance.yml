@@ -38,6 +38,59 @@ logging:
   level: DEBUG
 # Providers for Testing
 providers:
+  ocp-new:
+    name: ocp-new
+    type: ManageIQ::Providers::Openshift::ContainerManager
+    connection_configurations:
+      ocp_endpoint:
+        role: default
+        hostname: 10.16.30.50
+        port: 8443
+        security_protocol: ssl-without-validation
+        verify_ssl: 0
+      ocp_auth:
+        role: bearer
+        auth_key: meh_meh
+      metric_endpoint:
+        role: hawkular
+        hostname: test.10.16.30.100.node.metrics.xip.io
+        port: 443
+        security_protocol: ssl-without-validation
+        verify_ssl: 0
+
+  openshift-old:
+    name: ose-old
+    type: ManageIQ::Providers::OpenshiftEnterprise::ContainerManager
+    connection_configurations:
+      ocp_endpoint:
+        role: default
+        hostname: 10.16.30.50
+        port: 8443
+        # security_protocol could be ssl-without-validation
+        # look into the config for 'openshift-infra-new' for more..
+        security_protocol: ssl
+        # FIXME: either have certificate in here (insecure), or have filepath
+        # or have ansible do this (but that changes cfme-performance's structure)
+        certificate_authority: >
+                                -----BEGIN CERTIFICATE-----
+                                akhefk$##@TERIGDSPG)DSGJ#E#
+                                @QEREFDef9dsfn,dkjfsfosfewf
+      ocp_auth:
+        role: bearer
+        auth_key: 5bde4e8249db9db3d812da92
+      metric_endpoint:
+        role: hawkular
+        hostname: test.10.16.30.100.node.metrics.xip.io
+        port: 443
+        security_protocol: something
+        certificate_authority: >
+                                -----BEGIN CERTIFICATE-----
+                                akhefk$##@TERIGDSPG)DSGJ#E#
+                                @QEREFDef9dsfn,dkjfsfosfewf
+      metric_auth:
+        role: hawkular
+        auth_key: dc011744cb54ceb3486a67f4e
+
   vmware-infrastructure:
     name: vmware-infrastructure
     type: ManageIQ::Providers::Vmware::InfraManager
@@ -211,6 +264,13 @@ tests:
           time_between_refresh: 60
           total_time: 1800
           grafana_dashboard: cfme-vmware-redhat-system-performance
+        - name: ose3-master-miq-scale
+          providers:
+            - ocp-new
+          time_between_refresh: 60
+          total_time: 1800
+          grafana_dashboard: manageiq-scale-openshift-enterprise-system-performance
+
 
     test_refresh_vms:
       scenarios:
